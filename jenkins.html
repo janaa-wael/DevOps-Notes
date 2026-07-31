@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A practical Jenkins guide from CI/CD foundations to pipelines, agents, Docker, GitHub, multibranch workflows, and Kubernetes deployment." />
+  <meta name="author" content="Jana Wael" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Jenkins: Zero to Hero | DevOps Notes</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0b1728;
+      --panel: rgba(15, 30, 50, 0.82);
+      --panel-solid: #0f1e32;
+      --panel-2: #132640;
+      --text: #ecf4ff;
+      --muted: #a7b6ca;
+      --line: rgba(162, 185, 214, 0.18);
+      --brand: #e4473d;
+      --brand-soft: rgba(228, 71, 61, 0.14);
+      --cyan: #31c4dc;
+      --green: #24c88a;
+      --yellow: #ffb11b;
+      --violet: #9a72ff;
+      --blue: #4d83ff;
+      --danger: #ff6670;
+      --shadow: 0 20px 55px rgba(0, 0, 0, 0.32);
+      --radius: 18px;
+      --code-bg: #050b14;
+      --sidebar: 292px;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f5f8fc;
+      --bg-soft: #edf3fa;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-solid: #ffffff;
+      --panel-2: #eef4fb;
+      --text: #152236;
+      --muted: #5f6f83;
+      --line: rgba(32, 58, 91, 0.15);
+      --brand-soft: rgba(228, 71, 61, 0.1);
+      --code-bg: #101a2a;
+      --shadow: 0 18px 48px rgba(44, 70, 101, 0.13);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 92px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 90% -10%, rgba(49, 196, 220, 0.14), transparent 32rem),
+        radial-gradient(circle at 5% 12%, rgba(228, 71, 61, 0.11), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: rgba(49, 196, 220, 0.27); }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img, svg { max-width: 100%; }
+    button, input { font: inherit; }
+
+    #scroll-progress {
+      position: fixed;
+      z-index: 1000;
+      inset: 0 auto auto 0;
+      width: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--brand), var(--yellow), var(--cyan));
+      box-shadow: 0 0 18px rgba(49, 196, 220, 0.45);
+    }
+
+    .topbar {
+      position: fixed;
+      z-index: 950;
+      top: 0;
+      left: var(--sidebar);
+      right: 0;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 28px;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .brand-mini:hover { text-decoration: none; }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 0 6px var(--brand-soft);
+    }
+
+    .toolbar { display: flex; align-items: center; gap: 10px; }
+    .icon-btn, .menu-btn {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .icon-btn:hover, .menu-btn:hover { transform: translateY(-1px); border-color: var(--cyan); }
+    .menu-btn { display: none; }
+
+    .sidebar {
+      position: fixed;
+      z-index: 980;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: var(--sidebar);
+      padding: 28px 20px 24px;
+      background: color-mix(in srgb, var(--bg-soft) 94%, transparent);
+      border-right: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      overflow-y: auto;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 2px 8px 24px;
+    }
+    .logo-mark {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), #a9232c);
+      box-shadow: 0 12px 28px rgba(228, 71, 61, 0.28);
+      font-weight: 900;
+      font-size: 24px;
+    }
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      right: -3px;
+      top: -3px;
+      background: var(--green);
+      border: 3px solid var(--bg-soft);
+    }
+    .logo-text strong { display: block; font-size: 17px; letter-spacing: -0.02em; }
+    .logo-text span { color: var(--muted); font-size: 12px; }
+
+    .topic-nav {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0 0 18px;
+    }
+    .topic-nav a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-solid);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .topic-nav a:hover {
+      color: var(--text);
+      border-color: var(--cyan);
+      text-decoration: none;
+    }
+
+    .search-wrap { position: relative; margin-bottom: 18px; }
+    .search-wrap input {
+      width: 100%;
+      padding: 11px 12px 11px 38px;
+      color: var(--text);
+      background: var(--panel-solid);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(49, 196, 220, 0.12); }
+    .search-wrap::before {
+      content: "⌕";
+      position: absolute;
+      left: 13px;
+      top: 7px;
+      color: var(--muted);
+      font-size: 21px;
+    }
+
+    .nav-title {
+      margin: 17px 10px 7px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .nav-list { list-style: none; margin: 0; padding: 0; }
+    .nav-list a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+    .nav-list a:hover, .nav-list a.active {
+      color: var(--text);
+      background: var(--panel-2);
+      text-decoration: none;
+    }
+    .nav-list a.active { box-shadow: inset 3px 0 var(--brand); }
+    .nav-index {
+      min-width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--cyan);
+      background: rgba(49, 196, 220, 0.1);
+      font-size: 10px;
+    }
+
+    .sidebar-footer {
+      margin-top: 22px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    main {
+      width: min(1140px, calc(100% - var(--sidebar)));
+      margin-left: var(--sidebar);
+      padding: 100px 38px 70px;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 600px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 48px;
+      align-items: center;
+      padding: 58px;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background:
+        linear-gradient(145deg, rgba(228, 71, 61, 0.09), transparent 36%),
+        linear-gradient(330deg, rgba(49, 196, 220, 0.10), transparent 40%),
+        var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border: 1px solid rgba(49, 196, 220, 0.18);
+      border-radius: 50%;
+      right: -120px;
+      top: -120px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 11px;
+      border: 1px solid rgba(49, 196, 220, 0.25);
+      border-radius: 999px;
+      color: var(--cyan);
+      background: rgba(49, 196, 220, 0.08);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 20px 0 18px;
+      max-width: 760px;
+      font-size: clamp(3rem, 7vw, 6.8rem);
+      line-height: 0.91;
+      letter-spacing: -0.075em;
+    }
+    h1 .accent { color: var(--brand); }
+    .hero p {
+      margin: 0;
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      font-weight: 800;
+      font-size: 13px;
+      transition: 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); text-decoration: none; }
+    .btn-primary { color: white; background: var(--brand); border-color: var(--brand); }
+    .btn-secondary { color: var(--text); background: var(--panel-solid); }
+
+    .pipeline-orbit {
+      position: relative;
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+    }
+    .controller-core {
+      position: relative;
+      z-index: 3;
+      width: 160px;
+      height: 160px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #192d49, #0c1728);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 0 0 22px rgba(49,196,220,0.05), 0 20px 50px rgba(0,0,0,0.38);
+    }
+    .controller-core strong { font-size: 22px; line-height: 1.05; }
+    .controller-core small { display: block; margin-top: 7px; color: var(--muted); }
+    .orbit-ring {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border: 1px dashed rgba(167,182,202,0.25);
+      border-radius: 50%;
+      animation: spin 28s linear infinite;
+    }
+    .orbit-node {
+      position: absolute;
+      width: 94px;
+      min-height: 56px;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel-solid);
+      box-shadow: var(--shadow);
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .n1 { top: 33px; left: calc(50% - 47px); border-top: 3px solid var(--blue); }
+    .n2 { right: 2px; top: 184px; border-top: 3px solid var(--yellow); }
+    .n3 { bottom: 26px; left: calc(50% - 47px); border-top: 3px solid var(--green); }
+    .n4 { left: 2px; top: 184px; border-top: 3px solid var(--violet); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .orbit-ring { animation: none; } * { scroll-behavior: auto !important; } }
+
+    .hero-metrics {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .metric {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(7,17,31,0.28);
+    }
+    .metric strong { display: block; font-size: 17px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+
+    .section {
+      position: relative;
+      padding: 96px 0 8px;
+    }
+    .section-head {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 34px;
+    }
+    .section-number {
+      width: 62px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: var(--panel-solid);
+      border: 1px solid var(--line);
+      color: var(--brand);
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+    }
+    .kicker {
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    h2 {
+      margin: 5px 0 8px;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.045em;
+    }
+    .section-head p { margin: 0; color: var(--muted); max-width: 760px; }
+    h3 { margin: 0 0 12px; font-size: 1.28rem; letter-spacing: -0.025em; }
+    h4 { margin: 20px 0 8px; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      position: relative;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 34px rgba(0,0,0,0.12);
+    }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .card p { color: var(--muted); }
+    .card-accent { overflow: hidden; }
+    .card-accent::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--accent, var(--cyan));
+    }
+    .card-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--accent, var(--cyan)) 14%, transparent);
+      color: var(--accent, var(--cyan));
+      font-weight: 900;
+    }
+
+    .plain-list { margin: 10px 0 0; padding-left: 20px; }
+    .plain-list li { margin: 7px 0; color: var(--muted); }
+    .plain-list li::marker { color: var(--cyan); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+      margin: 22px 0;
+    }
+    .flow-step {
+      position: relative;
+      min-height: 76px;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      border-radius: 13px;
+      color: white;
+      background: var(--step);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .flow-step:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      right: -8px;
+      z-index: 2;
+      color: var(--text);
+      font-size: 22px;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 14px;
+      align-items: start;
+      margin: 18px 0;
+      padding: 17px 18px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--callout, var(--cyan));
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--callout, var(--cyan)) 8%, var(--panel));
+    }
+    .callout strong { display: block; margin-bottom: 3px; }
+    .callout p { margin: 0; color: var(--muted); }
+    .callout-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      color: var(--callout, var(--cyan));
+      background: color-mix(in srgb, var(--callout, var(--cyan)) 14%, transparent);
+      font-weight: 900;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    th, td { padding: 15px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--panel-solid); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    td { color: var(--muted); font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    td strong { color: var(--text); }
+
+    .code-block {
+      position: relative;
+      margin: 16px 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--code-bg);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.2);
+    }
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 43px;
+      padding: 0 12px 0 15px;
+      color: #aebbd0;
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+      background: #0c1524;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ff6570; }
+    .code-dots i:nth-child(2) { background: #ffb11b; }
+    .code-dots i:nth-child(3) { background: #24c88a; }
+    .copy-btn {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 5px 8px;
+      background: rgba(255,255,255,0.05);
+      color: #c5d1e4;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.1); }
+    pre {
+      margin: 0;
+      padding: 20px;
+      overflow-x: auto;
+      color: #dce7f7;
+      font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      tab-size: 2;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    :not(pre) > code {
+      padding: 2px 6px;
+      border-radius: 7px;
+      color: var(--cyan);
+      background: rgba(49,196,220,0.1);
+      font-size: 0.88em;
+    }
+
+    .timeline { position: relative; padding-left: 26px; }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 7px;
+      bottom: 7px;
+      width: 2px;
+      background: linear-gradient(var(--brand), var(--cyan), var(--green));
+    }
+    .timeline-item { position: relative; padding: 0 0 22px 22px; }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -24px;
+      top: 7px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--panel-solid);
+      border: 3px solid var(--cyan);
+    }
+    .timeline-item strong { display: block; }
+    .timeline-item p { margin: 3px 0 0; color: var(--muted); }
+
+    details {
+      margin: 10px 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 15px 18px;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; float: right; color: var(--cyan); }
+    details[open] summary::after { content: "−"; }
+    .details-body { padding: 0 18px 18px; color: var(--muted); }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-item input { margin-top: 5px; accent-color: var(--green); }
+    .check-item span { color: var(--muted); font-size: 13px; }
+    .check-item input:checked + span { color: var(--green); text-decoration: line-through; opacity: 0.75; }
+
+    .stage-board {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .stage {
+      padding: 16px 10px;
+      border-top: 4px solid var(--stage);
+      border-radius: 12px;
+      background: var(--panel-solid);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+    .stage strong { display: block; font-size: 12px; }
+    .stage small { color: var(--muted); }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .pill {
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel-solid);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .quiz {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(154,114,255,0.1), transparent 50%), var(--panel);
+    }
+    .quiz button {
+      width: 100%;
+      margin: 5px 0;
+      padding: 11px 13px;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      background: var(--panel-solid);
+      cursor: pointer;
+    }
+    .quiz button:hover { border-color: var(--violet); }
+    .quiz-result { min-height: 26px; margin-top: 10px; color: var(--muted); font-weight: 700; }
+
+    .footer {
+      margin-top: 90px;
+      padding: 34px 0 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer-grid { display: grid; grid-template-columns: 1fr auto; gap: 30px; }
+    .footer strong { color: var(--text); }
+
+    .mobile-overlay { display: none; }
+
+    @media (max-width: 1120px) {
+      :root { --sidebar: 258px; }
+      main { padding-left: 28px; padding-right: 28px; }
+      .hero { grid-template-columns: 1fr; }
+      .pipeline-orbit { min-height: 390px; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .flow { grid-template-columns: repeat(4, 1fr); }
+      .stage-board { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 860px) {
+      :root { --sidebar: 290px; }
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-overlay {
+        position: fixed;
+        z-index: 970;
+        inset: 0;
+        background: rgba(0,0,0,0.52);
+      }
+      .mobile-overlay.show { display: block; }
+      .topbar { left: 0; padding: 0 16px; }
+      .menu-btn { display: grid; }
+      main { width: 100%; margin: 0; padding: 92px 18px 60px; }
+      .hero { min-height: auto; padding: 30px 22px; border-radius: 22px; }
+      .hero-metrics { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .section { padding-top: 78px; }
+    }
+
+    @media (max-width: 580px) {
+      h1 { font-size: 3.25rem; }
+      .pipeline-orbit { transform: scale(0.82); margin: -30px 0; }
+      .hero-metrics, .grid-4, .checklist { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; }
+      .section-number { width: 50px; height: 50px; }
+      .flow { grid-template-columns: repeat(2, 1fr); }
+      .stage-board { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr; }
+      .brand-mini span:last-child { display: none; }
+    }
+
+    @media print {
+      .sidebar, .topbar, #scroll-progress, .copy-btn, .hero-actions, .quiz, .mobile-overlay { display: none !important; }
+      main { width: 100%; margin: 0; padding: 0; }
+      body { background: white; color: black; }
+      .hero, .card, details, .table-wrap, .code-block { box-shadow: none; break-inside: avoid; }
+      .section { padding-top: 40px; }
+      a { color: black; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+  <div id="scroll-progress" aria-hidden="true"></div>
+  <div class="mobile-overlay" id="overlay"></div>
+
+  <aside class="sidebar" id="sidebar" aria-label="Course navigation">
+    <div class="logo-block">
+      <div class="logo-mark" aria-hidden="true">J</div>
+      <div class="logo-text">
+        <strong>Jenkins Guide</strong>
+        <span>Zero → Hero</span>
+      </div>
+    </div>
+
+    <div class="topic-nav" aria-label="Topic navigation">
+      <a href="index.html">All notes</a>
+      <a href="aws-networking.html">AWS networking</a>
+    </div>
+
+    <div class="search-wrap">
+      <input id="nav-search" type="search" placeholder="Filter sections..." aria-label="Filter course sections" />
+    </div>
+
+    <div class="nav-title">Learning path</div>
+    <nav>
+      <ul class="nav-list" id="nav-list">
+        <li><a href="#foundations"><span class="nav-index">01</span>CI/CD foundations</a></li>
+        <li><a href="#jenkins-core"><span class="nav-index">02</span>Jenkins core</a></li>
+        <li><a href="#architecture"><span class="nav-index">03</span>Architecture</a></li>
+        <li><a href="#installation"><span class="nav-index">04</span>Install & unlock</a></li>
+        <li><a href="#security"><span class="nav-index">05</span>Users, roles & folders</a></li>
+        <li><a href="#credentials"><span class="nav-index">06</span>Credentials & tools</a></li>
+        <li><a href="#freestyle"><span class="nav-index">07</span>Freestyle jobs</a></li>
+        <li><a href="#git"><span class="nav-index">08</span>GitHub integration</a></li>
+        <li><a href="#pipeline"><span class="nav-index">09</span>Pipeline & Jenkinsfile</a></li>
+        <li><a href="#agents"><span class="nav-index">10</span>Agents & Docker</a></li>
+        <li><a href="#multibranch"><span class="nav-index">11</span>Multibranch</a></li>
+        <li><a href="#delivery"><span class="nav-index">12</span>DockerHub & Kubernetes</a></li>
+        <li><a href="#troubleshooting"><span class="nav-index">13</span>Troubleshooting</a></li>
+        <li><a href="#labs"><span class="nav-index">14</span>Practice labs</a></li>
+        <li><a href="#references"><span class="nav-index">15</span>References</a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <strong>Tip:</strong> Complete the checkboxes in the lab section. Your progress is stored locally in your browser.
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Open navigation">☰</button>
+    <a class="brand-mini" href="index.html"><span class="brand-dot"></span><span>Jana Wael · DevOps Notes</span></a>
+    <div class="toolbar">
+      <button class="icon-btn" id="print-btn" title="Print or save as PDF" aria-label="Print guide">⎙</button>
+      <button class="icon-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle color theme">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="top">
+      <div>
+        <span class="eyebrow">Practical CI/CD handbook</span>
+        <h1>Jenkins:<br /><span class="accent">Zero to Hero.</span></h1>
+        <p>
+          Learn what Jenkins does, how controllers and agents cooperate, how to create secure jobs,
+          and how to grow from a simple Freestyle build into a Git-driven delivery pipeline that builds,
+          tests, packages, scans, publishes, and deploys applications.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#installation">Start the lab →</a>
+          <a class="btn btn-secondary" href="#pipeline">Jump to Jenkinsfile</a>
+        </div>
+      </div>
+
+      <div class="pipeline-orbit" aria-label="Jenkins controller and agents illustration">
+        <div class="orbit-ring"></div>
+        <div class="controller-core"><div><strong>Jenkins<br />Controller</strong><small>Orchestrates work</small></div></div>
+        <div class="orbit-node n1">Linux / Maven Agent</div>
+        <div class="orbit-node n2">Docker Build Agent</div>
+        <div class="orbit-node n3">Kubernetes Pod Agent</div>
+        <div class="orbit-node n4">Windows Test Agent</div>
+      </div>
+
+      <div class="hero-metrics">
+        <div class="metric"><strong>15 sections</strong><span>Concepts, labs, and production habits</span></div>
+        <div class="metric"><strong>UI → Code</strong><span>Freestyle, Pipeline, Multibranch</span></div>
+        <div class="metric"><strong>Secure by design</strong><span>Roles, credentials, and scoped access</span></div>
+        <div class="metric"><strong>End-to-end</strong><span>GitHub → DockerHub → Kubernetes</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="foundations" data-title="CI/CD foundations DevOps integration delivery deployment">
+      <div class="section-head">
+        <div class="section-number">01</div>
+        <div><div class="kicker">Start with the problem</div><h2>CI/CD foundations</h2><p>Jenkins makes more sense after you understand the delivery process it is automating.</p></div>
+      </div>
+
+      <div class="grid grid-3">
+        <article class="card card-accent" style="--accent: var(--blue)">
+          <div class="card-icon" style="--accent: var(--blue)">CI</div>
+          <h3>Continuous Integration</h3>
+          <p>Developers integrate changes frequently. Each change is automatically compiled, tested, and validated so integration problems appear early.</p>
+        </article>
+        <article class="card card-accent" style="--accent: var(--green)">
+          <div class="card-icon" style="--accent: var(--green)">CD</div>
+          <h3>Continuous Delivery</h3>
+          <p>The application remains releasable. The pipeline prepares and verifies a release, while production deployment usually requires an approval.</p>
+        </article>
+        <article class="card card-accent" style="--accent: var(--yellow)">
+          <div class="card-icon" style="--accent: var(--yellow)">CD</div>
+          <h3>Continuous Deployment</h3>
+          <p>Every change that passes the automated checks can move to production automatically, with no manual release gate.</p>
+        </article>
+      </div>
+
+      <div class="flow" aria-label="Typical CI/CD flow">
+        <div class="flow-step" style="--step:#3469db">Commit</div>
+        <div class="flow-step" style="--step:#7f58dc">Checkout</div>
+        <div class="flow-step" style="--step:#dc8f17">Build</div>
+        <div class="flow-step" style="--step:#159f72">Test</div>
+        <div class="flow-step" style="--step:#ce3e48">Scan</div>
+        <div class="flow-step" style="--step:#168ba0">Package</div>
+        <div class="flow-step" style="--step:#5946c7">Deploy</div>
+        <div class="flow-step" style="--step:#c5740a">Verify</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Why automate?</h3>
+          <ul class="plain-list">
+            <li>Faster feedback after every change.</li>
+            <li>Repeatable builds and deployments.</li>
+            <li>Fewer manual mistakes and hidden steps.</li>
+            <li>Clear evidence: logs, reports, artifacts, image tags, and rollout status.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>DevOps is larger than Jenkins</h3>
+          <p>DevOps combines culture, process, and tools. Jenkins is one orchestrator inside that system; Git stores source, build tools compile it, test tools validate it, registries store packages, and runtime platforms operate it.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="jenkins-core" data-title="Jenkins definition orchestration jobs builds plugins artifacts">
+      <div class="section-head">
+        <div class="section-number">02</div>
+        <div><div class="kicker">The mental model</div><h2>What Jenkins actually does</h2><p>Jenkins is an automation server that coordinates tools, executes workflows, and records evidence.</p></div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card card-accent" style="--accent: var(--brand)"><h3>Orchestration</h3><p>Run jobs, place work in a queue, assign it to agents, execute stages in order, and control success or failure paths.</p></div>
+        <div class="card card-accent" style="--accent: var(--green)"><h3>Integration</h3><p>Connect source control, build tools, test frameworks, scanners, registries, notification systems, and deployment platforms.</p></div>
+        <div class="card card-accent" style="--accent: var(--cyan)"><h3>Evidence</h3><p>Keep console logs, test reports, artifacts, pipeline status, metadata, and links that explain exactly what happened.</p></div>
+      </div>
+
+      <div class="callout" style="--callout: var(--yellow)">
+        <div class="callout-icon">!</div>
+        <div><strong>Jenkins does not replace your tools.</strong><p>Maven still builds Java, npm still builds Node.js, Docker still builds images, and kubectl still talks to Kubernetes. Jenkins decides when and where those tools run.</p></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Term</th><th>Meaning</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Job / Project</strong></td><td>A configured unit of automation.</td><td>A Freestyle job or Pipeline project.</td></tr>
+            <tr><td><strong>Build</strong></td><td>One execution of a job.</td><td>Build #42 of <code>java-ci</code>.</td></tr>
+            <tr><td><strong>Stage</strong></td><td>A visible phase with one clear purpose.</td><td>Build, Test, Scan, Deploy.</td></tr>
+            <tr><td><strong>Step</strong></td><td>An operation inside a stage.</td><td><code>sh 'mvn test'</code>.</td></tr>
+            <tr><td><strong>Artifact</strong></td><td>A build output retained for later use.</td><td>JAR, ZIP, report, metadata file.</td></tr>
+            <tr><td><strong>Plugin</strong></td><td>An extension that adds integrations or functionality.</td><td>Git, Pipeline, JUnit, Role Strategy.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="architecture" data-title="controller agent node executor workspace label architecture queue">
+      <div class="section-head">
+        <div class="section-number">03</div>
+        <div><div class="kicker">Distributed builds</div><h2>Controller and agents</h2><p>The controller manages Jenkins. Agents provide the environments where builds actually run.</p></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Controller responsibilities</h3>
+          <ul class="plain-list">
+            <li>Host the web UI and API.</li>
+            <li>Store job configuration and credentials.</li>
+            <li>Maintain the build queue and schedule work.</li>
+            <li>Load plugins, manage permissions, and show results.</li>
+          </ul>
+          <div class="callout" style="--callout: var(--danger)"><div class="callout-icon">×</div><div><strong>Avoid heavy builds on the controller</strong><p>In a stronger setup, set controller executors to zero and run builds on agents.</p></div></div>
+        </div>
+        <div class="card">
+          <h3>Agent responsibilities</h3>
+          <ul class="plain-list">
+            <li>Provide a workspace and executors.</li>
+            <li>Run Pipeline steps and Freestyle commands.</li>
+            <li>Provide required tools such as JDK, Maven, Docker, or kubectl.</li>
+            <li>Be static, containerized, or dynamically created.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="timeline card">
+        <div class="timeline-item"><strong>1. Event arrives</strong><p>A user clicks Build Now, a schedule fires, or GitHub sends a webhook.</p></div>
+        <div class="timeline-item"><strong>2. Controller queues the build</strong><p>Jenkins checks job rules, parameters, labels, and available executors.</p></div>
+        <div class="timeline-item"><strong>3. Jenkins allocates an agent</strong><p>The selected node must match the requested label and have a free executor.</p></div>
+        <div class="timeline-item"><strong>4. Steps run in a workspace</strong><p>Source is checked out and tools operate on the workspace files.</p></div>
+        <div class="timeline-item"><strong>5. Results return to Jenkins</strong><p>Logs, reports, artifacts, and final status become visible in the UI.</p></div>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="card"><h3>Node</h3><p>A machine, VM, container, or pod registered in Jenkins.</p></div>
+        <div class="card"><h3>Executor</h3><p>A slot that can run one unit of work. More is not always better.</p></div>
+        <div class="card"><h3>Workspace</h3><p>The directory used by a particular job execution on an agent.</p></div>
+        <div class="card"><h3>Label</h3><p>A capability tag such as <code>linux</code>, <code>maven</code>, or <code>docker</code>.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="installation" data-title="install Docker Ubuntu setup wizard initial admin password localhost 8080">
+      <div class="section-head">
+        <div class="section-number">04</div>
+        <div><div class="kicker">First hands-on lab</div><h2>Install and unlock Jenkins</h2><p>For a learning environment, Docker gives you a clean, repeatable Jenkins controller with persistent storage.</p></div>
+      </div>
+
+      <div class="callout" style="--callout: var(--green)">
+        <div class="callout-icon">✓</div>
+        <div><strong>Prerequisites</strong><p>Install Docker and Git on your Ubuntu VM. Run <code>docker --version</code> and <code>git --version</code> before continuing.</p></div>
+      </div>
+
+      <h3>Option A — Simple Docker installation</h3>
+      <div class="code-block" data-lang="bash">
+        <div class="code-head"><span><span class="code-dots"><i></i><i></i><i></i></span>&nbsp;&nbsp;Terminal</span></div>
+        <pre><code>docker volume create jenkins_home
+
+docker run -d \
+  --name jenkins \
+  --restart=unless-stopped \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts-jdk21</code></pre>
+      </div>
+
+      <p class="card">A course or demo repository may pin another supported tag, such as <code>lts-jdk17</code>. Use the repository’s exact tag when reproducing that lab; otherwise verify the currently supported Java version before choosing an image tag.</p>
+
+      <h3>Get the initial administrator password</h3>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Jenkins running in Docker</h3>
+          <div class="code-block" data-lang="bash"><div class="code-head"><span>Docker</span></div><pre><code>docker exec jenkins \
+  cat /var/jenkins_home/secrets/initialAdminPassword</code></pre></div>
+        </div>
+        <div class="card">
+          <h3>Jenkins installed as Ubuntu service</h3>
+          <div class="code-block" data-lang="bash"><div class="code-head"><span>Ubuntu</span></div><pre><code>sudo cat \
+  /var/lib/jenkins/secrets/initialAdminPassword</code></pre></div>
+        </div>
+      </div>
+
+      <div class="callout" style="--callout: var(--yellow)"><div class="callout-icon">!</div><div><strong>Do not mix the two paths.</strong><p><code>/var/jenkins_home</code> is inside the official Docker container. <code>/var/lib/jenkins</code> belongs to a Linux package installation on the host.</p></div></div>
+
+      <h3>Complete the setup wizard</h3>
+      <div class="stage-board">
+        <div class="stage" style="--stage:var(--blue)"><strong>1. Open</strong><small>http://localhost:8080</small></div>
+        <div class="stage" style="--stage:var(--violet)"><strong>2. Unlock</strong><small>Paste initial password</small></div>
+        <div class="stage" style="--stage:var(--yellow)"><strong>3. Plugins</strong><small>Install suggested plugins</small></div>
+        <div class="stage" style="--stage:var(--green)"><strong>4. Admin</strong><small>Create your user</small></div>
+        <div class="stage" style="--stage:var(--cyan)"><strong>5. URL</strong><small>Keep local URL for lab</small></div>
+        <div class="stage" style="--stage:var(--brand)"><strong>6. Start</strong><small>Open the dashboard</small></div>
+      </div>
+
+      <details>
+        <summary>Useful Docker commands</summary>
+        <div class="details-body">
+          <div class="code-block" data-lang="bash"><div class="code-head"><span>Container operations</span></div><pre><code>docker ps                         # running containers
+docker logs -f jenkins            # follow Jenkins logs
+docker restart jenkins            # restart controller
+docker stop jenkins               # stop controller
+docker start jenkins              # start it again
+docker rm -f jenkins              # remove container, not named volume
+docker volume inspect jenkins_home</code></pre></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="security" data-title="security users RBAC role based authorization folders permissions dev-user test-user">
+      <div class="section-head">
+        <div class="section-number">05</div>
+        <div><div class="kicker">Access control</div><h2>Users, roles, and folders</h2><p>Authentication answers “Who are you?” Authorization answers “What are you allowed to do?”</p></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Authentication</h3>
+          <p>Jenkins verifies identity through its own user database or an external identity system such as LDAP, Active Directory, or an SSO provider.</p>
+        </div>
+        <div class="card">
+          <h3>Authorization</h3>
+          <p>Permissions decide who can read, build, configure, create, or delete jobs. The Role-Based Authorization Strategy plugin adds reusable global, item, and agent roles.</p>
+        </div>
+      </div>
+
+      <h3>Lab: create users and folder-specific roles</h3>
+      <div class="timeline card">
+        <div class="timeline-item"><strong>Install the plugin</strong><p>Manage Jenkins → Plugins → Available plugins → search for “Role-Based Authorization Strategy” → Install.</p></div>
+        <div class="timeline-item"><strong>Create users</strong><p>Manage Jenkins → Users → Create User. Create <code>dev-user</code> and <code>test-user</code>.</p></div>
+        <div class="timeline-item"><strong>Enable role-based authorization</strong><p>Manage Jenkins → Security → Authorization → Role-Based Strategy → Save.</p></div>
+        <div class="timeline-item"><strong>Create folders</strong><p>Dashboard → New Item → Folder. Create <code>development</code> and <code>testing</code>.</p></div>
+        <div class="timeline-item"><strong>Define roles</strong><p>Manage Jenkins → Manage and Assign Roles → Manage Roles.</p></div>
+        <div class="timeline-item"><strong>Assign users</strong><p>Open Assign Roles and map each user to the intended global and item roles.</p></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role type</th><th>Role</th><th>Pattern</th><th>Minimum permissions</th><th>Assign to</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Global</strong></td><td>authenticated-read</td><td>—</td><td>Overall / Read</td><td>dev-user, test-user</td></tr>
+            <tr><td><strong>Item</strong></td><td>development-read</td><td><code>^development(/.*)?$</code></td><td>Item / Read</td><td>dev-user</td></tr>
+            <tr><td><strong>Item</strong></td><td>testing-delete</td><td><code>^testing(/.*)?$</code></td><td>Item / Read, Item / Delete</td><td>test-user</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout" style="--callout: var(--danger)"><div class="callout-icon">!</div><div><strong>Protect your admin access.</strong><p>Configure and test new roles in a second browser session before logging out of the administrator account. A wrong security configuration can lock you out.</p></div></div>
+    </section>
+
+    <section class="section" id="credentials" data-title="credentials secrets GitHub token DockerHub password SSH key kubeconfig tools JDK Maven Git plugins">
+      <div class="section-head">
+        <div class="section-number">06</div>
+        <div><div class="kicker">Secure integrations</div><h2>Credentials, tools, and plugins</h2><p>Jenkins needs access to external systems, but secrets must never be hard-coded in a job or repository.</p></div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card"><div class="card-icon" style="--accent:var(--cyan)">U/P</div><h3>Username + password</h3><p>Docker Hub login, basic authentication, and some package registries.</p></div>
+        <div class="card"><div class="card-icon" style="--accent:var(--yellow)">TXT</div><h3>Secret text</h3><p>Personal access tokens, API keys, webhook secrets, and scanner tokens.</p></div>
+        <div class="card"><div class="card-icon" style="--accent:var(--green)">KEY</div><h3>SSH private key</h3><p>SSH-based agent connections, private Git servers, and remote deployments.</p></div>
+        <div class="card"><div class="card-icon" style="--accent:var(--violet)">FILE</div><h3>Secret file</h3><p>Kubernetes kubeconfig files, service-account files, and certificates.</p></div>
+        <div class="card"><div class="card-icon" style="--accent:var(--blue)">ID</div><h3>Credential ID</h3><p>A safe reference such as <code>dockerhub-creds</code>; it is not the secret itself.</p></div>
+        <div class="card"><div class="card-icon" style="--accent:var(--brand)">↻</div><h3>Rotation</h3><p>Use dedicated machine credentials, limit scope, and replace tokens before or when they expire.</p></div>
+      </div>
+
+      <h3>Add a credential</h3>
+      <div class="card">
+        <p><strong>Manage Jenkins → Credentials → System → Global credentials → Add Credentials</strong></p>
+        <p>Choose the correct type, enter the secret, assign a clear ID, and add a useful description. Prefer folder-scoped credentials for team-specific applications instead of making every secret globally visible.</p>
+      </div>
+
+      <h3>Use Docker Hub credentials safely</h3>
+      <div class="code-block" data-lang="groovy">
+        <div class="code-head"><span>Jenkinsfile</span></div>
+        <pre><code>withCredentials([usernamePassword(
+  credentialsId: 'dockerhub-creds',
+  usernameVariable: 'DOCKER_USER',
+  passwordVariable: 'DOCKER_PASS'
+)]) {
+  sh '''
+    set +x
+    echo "$DOCKER_PASS" | docker login \
+      -u "$DOCKER_USER" --password-stdin
+  '''
+}</code></pre>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Global tools</h3>
+          <p>Manage Jenkins → Tools can define named JDK, Maven, Gradle, Git, and Node.js installations. Pipeline names must match the names configured in Jenkins.</p>
+          <div class="pill-row"><span class="pill">JDK 21</span><span class="pill">Maven 3.9</span><span class="pill">Git</span><span class="pill">Node.js 20</span></div>
+        </div>
+        <div class="card">
+          <h3>Plugins</h3>
+          <p>Install only what the platform needs. Common examples include Pipeline, Git, GitHub Branch Source, Credentials Binding, JUnit, Docker Pipeline, Kubernetes, and Role Strategy.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="freestyle" data-title="freestyle job build step execute shell parameters archive cron schedule upstream downstream artifact">
+      <div class="section-head">
+        <div class="section-number">07</div>
+        <div><div class="kicker">Jenkins through the UI</div><h2>Freestyle jobs</h2><p>Freestyle jobs are useful for learning Jenkins and for small, stable tasks. Their main limitation is that configuration lives in the UI instead of source control.</p></div>
+      </div>
+
+      <h3>Create your first job</h3>
+      <div class="timeline card">
+        <div class="timeline-item"><strong>Dashboard → New Item</strong><p>Enter <code>system-info</code>, choose Freestyle project, and click OK.</p></div>
+        <div class="timeline-item"><strong>Add a build step</strong><p>Build Steps → Add build step → Execute shell.</p></div>
+        <div class="timeline-item"><strong>Paste commands</strong><p>The shell box appears on the same page; it does not open in a popup.</p></div>
+        <div class="timeline-item"><strong>Save and run</strong><p>Click Save → Build Now → open the build number → Console Output.</p></div>
+      </div>
+
+      <div class="code-block" data-lang="bash"><div class="code-head"><span>Execute shell</span></div><pre><code>echo "Jenkins is running this job"
+hostname
+whoami
+pwd</code></pre></div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>File creation task</h3>
+          <div class="code-block" data-lang="bash"><div class="code-head"><span>Execute shell</span></div><pre><code>mkdir -p test
+echo "hello world" &gt; test/file.txt
+cat test/file.txt</code></pre></div>
+        </div>
+        <div class="card">
+          <h3>Folder lab tasks</h3>
+          <p>Inside <code>development</code>, create a job that writes <code>test.txt</code>. Inside <code>testing</code>, create a job that runs <code>ls &amp;&amp; pwd</code>.</p>
+        </div>
+      </div>
+
+      <h3>Parameters</h3>
+      <p>Enable <strong>This project is parameterized</strong>, then add string, choice, and boolean parameters.</p>
+      <div class="code-block" data-lang="bash"><div class="code-head"><span>Parameterized shell step</span></div><pre><code>echo "Version: $VERSION"
+echo "Environment: $ENV"
+
+if [ "$RUN_TESTS" = "true" ]; then
+  echo "Running tests..."
+else
+  echo "Tests skipped"
+fi</code></pre></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th>Where</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Archive artifacts</strong></td><td>Post-build Actions</td><td><code>**/*.jar</code>, <code>**/*.zip</code>, or <code>test/*.txt</code></td></tr>
+            <tr><td><strong>Schedule every 5 minutes</strong></td><td>Build Triggers → Build periodically</td><td><code>H/5 * * * *</code></td></tr>
+            <tr><td><strong>Schedule at 08:00</strong></td><td>Build Triggers → Build periodically</td><td><code>0 8 * * *</code></td></tr>
+            <tr><td><strong>Run Job-B after Job-A</strong></td><td>Post-build Actions</td><td>Build other projects → Job-B → trigger only if stable</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="git" data-title="Git GitHub checkout repository webhook polling SCM private repository token localhost">
+      <div class="section-head">
+        <div class="section-number">08</div>
+        <div><div class="kicker">Source-driven builds</div><h2>Git and GitHub integration</h2><p>Instead of building a manually created folder, Jenkins should usually check out a versioned repository.</p></div>
+      </div>
+
+      <div class="flow" style="grid-template-columns:repeat(5,1fr)">
+        <div class="flow-step" style="--step:#3469db">Developer push</div>
+        <div class="flow-step" style="--step:#17263b">GitHub repo</div>
+        <div class="flow-step" style="--step:#7f58dc">Webhook</div>
+        <div class="flow-step" style="--step:#159f72">Jenkins job</div>
+        <div class="flow-step" style="--step:#168ba0">Build result</div>
+      </div>
+
+      <h3>Freestyle Git setup</h3>
+      <div class="timeline card">
+        <div class="timeline-item"><strong>Install Git plugins</strong><p>The suggested plugin set usually includes the basic Git integration.</p></div>
+        <div class="timeline-item"><strong>Open Source Code Management</strong><p>Choose Git and enter the repository URL.</p></div>
+        <div class="timeline-item"><strong>Select credentials if needed</strong><p>Public HTTPS repositories require no credential. Private repositories need a token or SSH key.</p></div>
+        <div class="timeline-item"><strong>Choose branch</strong><p>For example <code>*/main</code>.</p></div>
+        <div class="timeline-item"><strong>Build inside the workspace</strong><p>Jenkins checks out the selected revision before executing build steps.</p></div>
+      </div>
+
+      <div class="callout" style="--callout: var(--yellow)"><div class="callout-icon">!</div><div><strong>GitHub cannot call your VM’s localhost.</strong><p>A webhook pointing to <code>http://localhost:8080/github-webhook/</code> only refers to GitHub’s own machine, not yours. For a local lab, trigger builds manually, poll SCM, or expose Jenkins through a controlled public endpoint. In a hosted environment, use the externally reachable Jenkins URL.</p></div></div>
+
+      <div class="grid grid-3">
+        <div class="card"><h3>Webhook</h3><p>Fast and event-driven. Best for normal CI when GitHub can reach Jenkins.</p></div>
+        <div class="card"><h3>Polling</h3><p>Jenkins checks for changes on a schedule. Useful as a fallback in restricted networks.</p></div>
+        <div class="card"><h3>Manual</h3><p>Good for debugging and classroom labs, but not automated.</p></div>
+      </div>
+
+      <h3>Demo repository</h3>
+      <div class="code-block" data-lang="bash"><div class="code-head"><span>Clone the classroom project</span></div><pre><code>cd ~/Documents
+git clone https://github.com/Badawi02/Jenkins-demo.git
+cd Jenkins-demo
+ls</code></pre></div>
+      <p class="card">The repository includes an <code>agent/</code> Dockerfile, a <code>java-demo-app/</code> Maven application, Jenkinsfiles, and step-by-step lab instructions.</p>
+    </section>
+
+    <section class="section" id="pipeline" data-title="pipeline Jenkinsfile declarative scripted agent stages steps environment parameters post when input approval Java NodeJS">
+      <div class="section-head">
+        <div class="section-number">09</div>
+        <div><div class="kicker">Pipeline as code</div><h2>Pipeline and Jenkinsfile</h2><p>A Jenkinsfile stores the delivery workflow beside the application, so pipeline changes are versioned, reviewed, and reproducible.</p></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card card-accent" style="--accent:var(--yellow)"><h3>Freestyle</h3><p>Configured mainly in the UI. Easy for simple tasks, but changes are harder to review and copy between environments.</p></div>
+        <div class="card card-accent" style="--accent:var(--green)"><h3>Pipeline</h3><p>Defined as code. Supports stages, conditions, parameters, parallel work, approvals, post actions, and reuse.</p></div>
+      </div>
+
+      <h3>Minimal Declarative Pipeline</h3>
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Jenkinsfile</span></div><pre><code>pipeline {
+  agent any
+
+  stages {
+    stage('Build') {
+      steps {
+        sh 'ls -ltr'
+      }
+    }
+  }
+
+  post {
+    always {
+      echo 'Pipeline finished'
+    }
+  }
+}</code></pre></div>
+
+      <div class="grid grid-3">
+        <div class="card"><h3><code>agent</code></h3><p>Where the whole pipeline or a particular stage runs.</p></div>
+        <div class="card"><h3><code>stages</code></h3><p>The ordered container for visible delivery phases.</p></div>
+        <div class="card"><h3><code>steps</code></h3><p>The actual commands and Jenkins operations.</p></div>
+        <div class="card"><h3><code>environment</code></h3><p>Non-secret variables or credential bindings.</p></div>
+        <div class="card"><h3><code>parameters</code></h3><p>User inputs supplied when a build starts.</p></div>
+        <div class="card"><h3><code>post</code></h3><p>Actions for success, failure, unstable, or always.</p></div>
+      </div>
+
+      <h3>Java CI pipeline</h3>
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Jenkinsfile — Java/Maven</span></div><pre><code>pipeline {
+  agent { label 'linux && maven' }
+
+  environment {
+    APP_NAME = 'jenkins-java-demo'
+  }
+
+  parameters {
+    string(name: 'VERSION', defaultValue: '1.0.0')
+    choice(name: 'ENV', choices: ['dev', 'test', 'prod'])
+    booleanParam(name: 'RUN_TESTS', defaultValue: true)
+  }
+
+  options {
+    timeout(time: 20, unit: 'MINUTES')
+    timestamps()
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Build') {
+      steps { sh 'mvn -B clean package -DskipTests' }
+    }
+
+    stage('Unit Test') {
+      when { expression { params.RUN_TESTS } }
+      steps { sh 'mvn -B test' }
+      post {
+        always { junit 'target/surefire-reports/*.xml' }
+      }
+    }
+
+    stage('Package') {
+      steps {
+        sh 'mkdir -p dist && cp target/*.jar dist/'
+      }
+    }
+
+    stage('Archive') {
+      steps {
+        archiveArtifacts artifacts: 'dist/*.jar', fingerprint: true
+      }
+    }
+
+    stage('Approval') {
+      when {
+        allOf {
+          branch 'main'
+          expression { params.ENV == 'prod' }
+        }
+      }
+      steps { input message: 'Deploy to Production?' }
+    }
+  }
+
+  post {
+    success { echo "${env.JOB_NAME} #${env.BUILD_NUMBER} succeeded" }
+    failure { echo 'Open the failed stage and inspect Console Output' }
+    always  { echo "Result: ${currentBuild.currentResult}" }
+  }
+}</code></pre></div>
+
+      <details>
+        <summary>Node.js CI example</summary>
+        <div class="details-body">
+          <div class="code-block" data-lang="groovy"><div class="code-head"><span>Jenkinsfile — Node.js</span></div><pre><code>pipeline {
+  agent { label 'linux && nodejs' }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Install') {
+      steps { sh 'npm ci' }
+    }
+    stage('Test') {
+      steps { sh 'npm test' }
+    }
+    stage('Build') {
+      steps { sh 'npm run build' }
+    }
+    stage('Archive') {
+      steps { archiveArtifacts artifacts: 'dist/**', fingerprint: true }
+    }
+  }
+}</code></pre></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="agents" data-title="agent Docker container inbound WebSocket SSH permanent node labels executor custom image Maven">
+      <div class="section-head">
+        <div class="section-number">10</div>
+        <div><div class="kicker">Clean build environments</div><h2>Agents and Docker-based builds</h2><p>Agents isolate build tools from the controller and let Jenkins route each workload to a suitable environment.</p></div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card"><h3>Inbound agent</h3><p>The agent connects to the controller using a secret, often over WebSocket. Useful for containers, Windows, and restricted networks.</p></div>
+        <div class="card"><h3>SSH agent</h3><p>The controller connects to a static Linux host using an SSH credential.</p></div>
+        <div class="card"><h3>Dynamic agent</h3><p>Jenkins creates a container or Kubernetes pod for a build and removes it afterward.</p></div>
+      </div>
+
+      <h3>Classroom Docker agent workflow</h3>
+      <div class="timeline card">
+        <div class="timeline-item"><strong>Create the node</strong><p>Manage Jenkins → Nodes → New Node → Permanent Agent.</p></div>
+        <div class="timeline-item"><strong>Configure it</strong><p>One executor, remote root <code>/home/jenkins/agent</code>, labels <code>docker linux maven slave</code>, inbound launch method.</p></div>
+        <div class="timeline-item"><strong>Copy the secret</strong><p>Open the node page and copy only the secret from the generated agent command.</p></div>
+        <div class="timeline-item"><strong>Build the image</strong><p>The repository’s <code>agent/Dockerfile</code> installs Java, Maven, Git, and Bash.</p></div>
+        <div class="timeline-item"><strong>Run the container</strong><p>The container joins the controller’s Docker network and starts the inbound agent.</p></div>
+      </div>
+
+      <div class="code-block" data-lang="bash"><div class="code-head"><span>Build and run the demo agent</span></div><pre><code>cd Jenkins-demo
+export DEMO_DIR="$(pwd)"
+
+docker network create jenkins-net 2&gt;/dev/null || true
+
+docker build -t jenkins-maven-agent:demo ./agent
+
+docker run -d \
+  --name jenkins-slave-1 \
+  --network jenkins-net \
+  -v "$DEMO_DIR/java-demo-app:$DEMO_DIR/java-demo-app" \
+  jenkins-maven-agent:demo \
+  -url http://jenkins-master:8080 \
+  -secret PASTE_SECRET_HERE \
+  -name docker-slave-1 \
+  -webSocket \
+  -workDir /home/jenkins/agent</code></pre></div>
+
+      <div class="callout" style="--callout: var(--danger)"><div class="callout-icon">!</div><div><strong>The command above assumes the controller is also a container named <code>jenkins-master</code> on <code>jenkins-net</code>.</strong><p>If your controller is installed directly on Ubuntu instead, the connection URL and network approach are different. Do not blindly mix both installation models.</p></div></div>
+
+      <h3>Run a job only on the correct agent</h3>
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Label expression</span></div><pre><code>pipeline {
+  agent { label 'docker && linux && maven' }
+  stages {
+    stage('Verify Agent') {
+      steps {
+        sh 'echo $NODE_NAME && java -version && mvn -version'
+      }
+    }
+  }
+}</code></pre></div>
+    </section>
+
+    <section class="section" id="multibranch" data-title="multibranch pipeline branches pull requests indexing orphaned Jenkinsfile organization folder">
+      <div class="section-head">
+        <div class="section-number">11</div>
+        <div><div class="kicker">Branch-aware CI</div><h2>Multibranch Pipeline</h2><p>Jenkins scans a repository, finds branches and pull requests containing a Jenkinsfile, and creates a child job for each one.</p></div>
+      </div>
+
+      <div class="flow" style="grid-template-columns:repeat(5,1fr)">
+        <div class="flow-step" style="--step:#17263b">Repository</div>
+        <div class="flow-step" style="--step:#3469db">Branch scan</div>
+        <div class="flow-step" style="--step:#159f72">main job</div>
+        <div class="flow-step" style="--step:#dc8f17">feature job</div>
+        <div class="flow-step" style="--step:#7f58dc">PR job</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Why use it?</h3>
+          <ul class="plain-list">
+            <li>No manual job for every branch.</li>
+            <li>Pull-request validation before merge.</li>
+            <li>Branch-specific status and history.</li>
+            <li>Automatic cleanup rules for deleted branches.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Create it</h3>
+          <ol class="plain-list">
+            <li>Dashboard → New Item → Multibranch Pipeline.</li>
+            <li>Add a Git or GitHub branch source.</li>
+            <li>Enter the repository and credentials.</li>
+            <li>Set Script Path to <code>Jenkinsfile</code>.</li>
+            <li>Save and run “Scan Multibranch Pipeline Now”.</li>
+          </ol>
+        </div>
+      </div>
+
+      <h3>Common branch policy</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Source</th><th>Suggested stages</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><strong>feature/*</strong></td><td>Build + Unit Test</td><td>Fast developer feedback.</td></tr>
+            <tr><td><strong>Pull request</strong></td><td>Build + Test + Scan</td><td>Validate before merge.</td></tr>
+            <tr><td><strong>main</strong></td><td>Package + Build image + Push</td><td>Create a releasable artifact.</td></tr>
+            <tr><td><strong>release/*</strong></td><td>Deploy to staging</td><td>Release verification.</td></tr>
+            <tr><td><strong>Tag</strong></td><td>Publish immutable release</td><td>Traceable production release.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Branch conditions</span></div><pre><code>stage('PR Validation') {
+  when { changeRequest() }
+  steps { sh 'mvn -B test' }
+}
+
+stage('Deploy to Test') {
+  when { branch 'main' }
+  steps { sh './deploy.sh testing' }
+}</code></pre></div>
+    </section>
+
+    <section class="section" id="delivery" data-title="Docker image DockerHub registry tag build push Kubernetes kubectl Helm deploy rollout scan SonarQube">
+      <div class="section-head">
+        <div class="section-number">12</div>
+        <div><div class="kicker">End-to-end delivery</div><h2>DockerHub and Kubernetes</h2><p>After build and test, package the application once, assign an immutable identity, publish it, and deploy that same artifact.</p></div>
+      </div>
+
+      <div class="stage-board">
+        <div class="stage" style="--stage:var(--blue)"><strong>Checkout</strong><small>Known commit</small></div>
+        <div class="stage" style="--stage:var(--violet)"><strong>Build</strong><small>Compile/package</small></div>
+        <div class="stage" style="--stage:var(--green)"><strong>Test</strong><small>Publish reports</small></div>
+        <div class="stage" style="--stage:var(--brand)"><strong>Scan</strong><small>Quality/security</small></div>
+        <div class="stage" style="--stage:var(--yellow)"><strong>Image</strong><small>Unique tag</small></div>
+        <div class="stage" style="--stage:var(--cyan)"><strong>Deploy</strong><small>Verify rollout</small></div>
+      </div>
+
+      <h3>Dockerfile for a Java application</h3>
+      <div class="code-block" data-lang="dockerfile"><div class="code-head"><span>Dockerfile</span></div><pre><code>FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY target/my-app.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre></div>
+
+      <h3>Build and push an immutable image</h3>
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Jenkinsfile stages</span></div><pre><code>environment {
+  IMAGE_NAME = 'mydockerhubuser/my-app'
+  IMAGE_TAG  = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+}
+
+stage('Build Image') {
+  steps {
+    sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
+  }
+}
+
+stage('Push Image') {
+  steps {
+    withCredentials([usernamePassword(
+      credentialsId: 'dockerhub-creds',
+      usernameVariable: 'DOCKER_USER',
+      passwordVariable: 'DOCKER_PASS'
+    )]) {
+      sh '''
+        set +x
+        echo "$DOCKER_PASS" | docker login \
+          -u "$DOCKER_USER" --password-stdin
+        docker push "$IMAGE_NAME:$IMAGE_TAG"
+      '''
+    }
+  }
+}</code></pre></div>
+
+      <div class="callout" style="--callout: var(--green)"><div class="callout-icon">✓</div><div><strong>Use one immutable tag per build.</strong><p>A build number plus short commit SHA is better than relying only on <code>latest</code>. Deploy the same image to test, staging, and production instead of rebuilding it for each environment.</p></div></div>
+
+      <h3>Deploy and verify Kubernetes</h3>
+      <div class="code-block" data-lang="groovy"><div class="code-head"><span>Kubernetes stage</span></div><pre><code>stage('Deploy to Kubernetes') {
+  when { branch 'main' }
+  steps {
+    withCredentials([file(
+      credentialsId: 'kubeconfig-test',
+      variable: 'KUBECONFIG'
+    )]) {
+      sh '''
+        kubectl set image deployment/my-app \
+          my-app=$IMAGE_NAME:$IMAGE_TAG -n test
+
+        kubectl rollout status deployment/my-app \
+          -n test --timeout=180s
+      '''
+    }
+  }
+}</code></pre></div>
+
+      <details>
+        <summary>Helm deployment stage</summary>
+        <div class="details-body">
+          <div class="code-block" data-lang="groovy"><div class="code-head"><span>Helm</span></div><pre><code>stage('Deploy with Helm') {
+  when { branch 'main' }
+  steps {
+    sh '''
+      helm upgrade --install my-app ./helm/my-app \
+        --namespace test --create-namespace \
+        --set image.repository=$IMAGE_NAME \
+        --set image.tag=$IMAGE_TAG \
+        --wait --timeout 3m
+    '''
+  }
+}</code></pre></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="section" id="troubleshooting" data-title="troubleshooting failure unstable logs queue label webhook credentials Docker push Kubernetes deploy tests">
+      <div class="section-head">
+        <div class="section-number">13</div>
+        <div><div class="kicker">Debug systematically</div><h2>Troubleshooting and results</h2><p>Start with the symptom, reduce the scope, collect evidence, find the root cause, fix it, and prevent recurrence.</p></div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card card-accent" style="--accent:var(--green)"><h3>SUCCESS</h3><p>All required stages passed and the expected outputs were produced.</p></div>
+        <div class="card card-accent" style="--accent:var(--danger)"><h3>FAILURE</h3><p>A required build, test, scan, push, or deployment step failed.</p></div>
+        <div class="card card-accent" style="--accent:var(--yellow)"><h3>UNSTABLE</h3><p>The build completed but quality signals such as tests or warnings did not meet expectations.</p></div>
+      </div>
+
+      <h3>First questions</h3>
+      <div class="pill-row">
+        <span class="pill">One job or every job?</span>
+        <span class="pill">One branch or every branch?</span>
+        <span class="pill">One agent or every agent?</span>
+        <span class="pill">What changed last?</span>
+        <span class="pill">Always reproducible or flaky?</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Symptom</th><th>Check first</th><th>Typical cause</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Job stuck in queue</strong></td><td>Queue message, label, node status, free executors</td><td>Label mismatch, offline agent, no executor</td></tr>
+            <tr><td><strong>Execute shell seems to do nothing</strong></td><td>Scroll below Add build step; refresh page</td><td>The command box was added lower on the same page, or UI JavaScript failed</td></tr>
+            <tr><td><strong>GitHub push does not trigger build</strong></td><td>Webhook delivery, endpoint, job trigger, external reachability</td><td>Jenkins is localhost-only, wrong URL/event, proxy or TLS issue</td></tr>
+            <tr><td><strong>Credential error</strong></td><td>Credential ID, type, scope, expiry</td><td>Wrong ID, folder visibility, expired token</td></tr>
+            <tr><td><strong>Docker push fails</strong></td><td>Login, image name, tag, network</td><td>Wrong registry credential or repository path</td></tr>
+            <tr><td><strong>Kubernetes rollout fails</strong></td><td>kubectl output, pod events, image pull, readiness</td><td>Bad kubeconfig, namespace permission, unavailable image, failing probe</td></tr>
+            <tr><td><strong>Tests are flaky</strong></td><td>JUnit report, test timing, shared data</td><td>Environment dependency, race, poor isolation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>High-value evidence to collect</summary>
+        <div class="details-body">
+          <ul class="plain-list">
+            <li>Console Output and the exact failing command.</li>
+            <li>Stage duration and the first stage that changed behavior.</li>
+            <li>Agent logs, available disk, memory, tools, and permissions.</li>
+            <li>Webhook request/response and reverse-proxy logs.</li>
+            <li>JUnit, coverage, SonarQube, dependency, or image-scan reports.</li>
+            <li>Docker output, kubectl events, pod logs, and rollout status.</li>
+          </ul>
+        </div>
+      </details>
+
+      <div class="quiz" id="quiz">
+        <h3>Quick check</h3>
+        <p>A job says: “There are no nodes with the label ‘maven-docker’.” What should you inspect first?</p>
+        <button data-correct="false">The GitHub webhook secret</button>
+        <button data-correct="true">Agent labels and whether the node is online</button>
+        <button data-correct="false">The Docker image tag</button>
+        <div class="quiz-result" id="quiz-result"></div>
+      </div>
+    </section>
+
+    <section class="section" id="labs" data-title="tasks day 1 day 2 lab checklist practice exercises zero hero">
+      <div class="section-head">
+        <div class="section-number">14</div>
+        <div><div class="kicker">Build confidence</div><h2>Zero-to-hero lab checklist</h2><p>Use these tasks as a progressive practice plan. Check each item only after you can repeat it without copying every click.</p></div>
+      </div>
+
+      <div class="checklist" id="lab-checklist">
+        <label class="check-item"><input type="checkbox" data-check="install"><span>Run Jenkins from the official Docker image, expose port 8080, and unlock it.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="users"><span>Create local users and verify they can sign in.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="roles"><span>Install Role Strategy and create admin, developer, and read-only roles.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="folders"><span>Create development and testing folders with item-role patterns.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="creds"><span>Create a dedicated machine credential and reference it by ID.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="tools"><span>Configure or verify JDK, Maven, and Git.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="free1"><span>Create a Freestyle job that prints hostname, whoami, and pwd.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="free2"><span>Create files in a Freestyle build and archive an artifact.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="git"><span>Connect a job to GitHub and build a checked-out repository.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="params"><span>Use string, choice, and boolean build parameters.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="trigger"><span>Schedule a build and trigger Job-B after Job-A succeeds.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="pipe"><span>Create a Declarative Pipeline with stages and post actions.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="jenkinsfile"><span>Move the Pipeline into a Jenkinsfile stored in Git.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="multi"><span>Create a Multibranch Pipeline for main, dev, and feature branches.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="agent"><span>Build a custom Docker agent image and connect it to Jenkins.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="java"><span>Implement Java stages: Checkout, Build, Unit Test, Package, Archive.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="node"><span>Implement Node.js stages: npm ci, test, build, archive.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="image"><span>Build and push a uniquely tagged Docker image using stored credentials.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="k8s"><span>Deploy with kubectl and wait for rollout status.</span></label>
+        <label class="check-item"><input type="checkbox" data-check="helm"><span>Add a Helm upgrade --install stage and a production approval gate.</span></label>
+      </div>
+
+      <div class="callout" style="--callout: var(--cyan)"><div class="callout-icon">→</div><div><strong>Final project target</strong><p>A push to GitHub triggers a Multibranch Pipeline that checks out a known commit, builds and tests the application, publishes reports, creates an immutable image, pushes it securely, deploys to a test namespace, waits for rollout, and leaves enough evidence to debug a failure.</p></div></div>
+    </section>
+
+    <section class="section" id="references" data-title="references sources documentation Jenkins course Ahmed Badawi">
+      <div class="section-head">
+        <div class="section-number">15</div>
+        <div><div class="kicker">Continue learning</div><h2>References</h2><p>This guide was organized from the supplied training deck and practice tasks, with current technical details cross-checked against official Jenkins documentation.</p></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Supplied learning references</h3>
+          <ul class="plain-list">
+            <li><em>CI/CD and Jenkins Training</em> by Ahmed Badawi.</li>
+            <li>Day 1 practice tasks: Docker installation, users, folders, RBAC, Freestyle jobs, and credentials.</li>
+            <li>Day 2 practice tasks: tools, Git, parameters, scheduling, Pipeline, agents, multibranch, Docker, Kubernetes, Helm, and approval.</li>
+            <li><a href="https://github.com/Badawi02/Jenkins-demo" target="_blank" rel="noreferrer">Badawi02/Jenkins-demo classroom repository</a>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Official documentation</h3>
+          <ul class="plain-list">
+            <li><a href="https://www.jenkins.io/doc/book/installing/docker/" target="_blank" rel="noreferrer">Install Jenkins with Docker</a></li>
+            <li><a href="https://www.jenkins.io/doc/book/pipeline/" target="_blank" rel="noreferrer">Jenkins Pipeline handbook</a></li>
+            <li><a href="https://www.jenkins.io/doc/book/pipeline/jenkinsfile/" target="_blank" rel="noreferrer">Using a Jenkinsfile</a></li>
+            <li><a href="https://www.jenkins.io/doc/book/pipeline/multibranch/" target="_blank" rel="noreferrer">Branches and pull requests</a></li>
+            <li><a href="https://www.jenkins.io/doc/book/using/using-agents/" target="_blank" rel="noreferrer">Using Jenkins agents</a></li>
+            <li><a href="https://www.jenkins.io/doc/book/using/using-credentials/" target="_blank" rel="noreferrer">Using credentials</a></li>
+            <li><a href="https://plugins.jenkins.io/role-strategy/" target="_blank" rel="noreferrer">Role-Based Authorization Strategy plugin</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout" style="--callout: var(--yellow)"><div class="callout-icon">↻</div><div><strong>Verify version-sensitive commands.</strong><p>Jenkins, Java, Docker images, plugins, and Kubernetes tooling evolve. Before production use, verify supported versions and security guidance in the official documentation.</p></div></div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-grid">
+        <div><strong>Jenkins: Zero to Hero</strong><br />Personal DevOps learning notes by Jana Wael.</div>
+        <div>Build small · automate safely · publish evidence</div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      const menuBtn = document.getElementById('menu-btn');
+      const themeBtn = document.getElementById('theme-btn');
+      const printBtn = document.getElementById('print-btn');
+      const progress = document.getElementById('scroll-progress');
+      const navLinks = [...document.querySelectorAll('.nav-list a')];
+      const sections = [...document.querySelectorAll('section.section')];
+
+      const savedTheme = localStorage.getItem('jenkins-guide-theme');
+      if (savedTheme) root.dataset.theme = savedTheme;
+
+      themeBtn.addEventListener('click', () => {
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('jenkins-guide-theme', root.dataset.theme);
+      });
+      printBtn.addEventListener('click', () => window.print());
+
+      const closeMenu = () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+      };
+      menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('show');
+      });
+      overlay.addEventListener('click', closeMenu);
+      navLinks.forEach(link => link.addEventListener('click', closeMenu));
+
+      const updateScroll = () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+        progress.style.width = `${Math.min(100, Math.max(0, ratio * 100))}%`;
+      };
+      window.addEventListener('scroll', updateScroll, { passive: true });
+      updateScroll();
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === `#${entry.target.id}`));
+          }
+        });
+      }, { rootMargin: '-25% 0px -65% 0px', threshold: 0 });
+      sections.forEach(section => observer.observe(section));
+
+      document.querySelectorAll('.code-block').forEach(block => {
+        const head = block.querySelector('.code-head');
+        const code = block.querySelector('code');
+        if (!head || !code) return;
+        const button = document.createElement('button');
+        button.className = 'copy-btn';
+        button.type = 'button';
+        button.textContent = 'Copy';
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(code.innerText);
+            button.textContent = 'Copied';
+            setTimeout(() => button.textContent = 'Copy', 1300);
+          } catch {
+            button.textContent = 'Select manually';
+          }
+        });
+        head.appendChild(button);
+      });
+
+      const search = document.getElementById('nav-search');
+      search.addEventListener('input', () => {
+        const query = search.value.trim().toLowerCase();
+        navLinks.forEach(link => {
+          const target = document.querySelector(link.getAttribute('href'));
+          const haystack = `${link.textContent} ${target?.dataset.title || ''}`.toLowerCase();
+          link.closest('li').style.display = !query || haystack.includes(query) ? '' : 'none';
+        });
+      });
+
+      document.querySelectorAll('[data-check]').forEach(input => {
+        const key = `jenkins-lab-${input.dataset.check}`;
+        input.checked = localStorage.getItem(key) === '1';
+        input.addEventListener('change', () => localStorage.setItem(key, input.checked ? '1' : '0'));
+      });
+
+      const quizResult = document.getElementById('quiz-result');
+      document.querySelectorAll('#quiz button').forEach(button => {
+        button.addEventListener('click', () => {
+          const correct = button.dataset.correct === 'true';
+          quizResult.textContent = correct
+            ? 'Correct — inspect the node labels, online state, and available executors.'
+            : 'Not this time. The queue message points to agent allocation, not source control or image tagging.';
+          quizResult.style.color = correct ? 'var(--green)' : 'var(--yellow)';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
